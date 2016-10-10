@@ -9,10 +9,8 @@ class colors:
     BLUE = '\033[94m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
-    RED = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 class TextTVParser(HTMLParser):
     def __init__(self):
@@ -41,14 +39,14 @@ class TextTVParser(HTMLParser):
         return self.data
 
 def print_usage():
-    pass
+    print('usage: texttv.py [page-index]')
 
 def main():
     page = '100'
     argc = len(sys.argv)
     if (argc > 1):
         page = sys.argv[1]
-        if page.isdigit() is False or int(page) not in range(100,700):
+        if page.isdigit() is False or int(page) not in range(100,900):
             print_usage()
             exit()
        
@@ -68,7 +66,7 @@ def main():
         'Y': lambda x: colors.YELLOW + x + colors.ENDC,
         'W': lambda x: x,
         'G': lambda x: colors.GREEN + x + colors.ENDC,
-    };
+    }
     output = ''
     for line in lines:
         if line[1] in set_color:
