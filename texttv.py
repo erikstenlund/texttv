@@ -41,15 +41,7 @@ class TextTVParser(HTMLParser):
 def print_usage():
     print('usage: texttv.py [page-index]')
 
-def main():
-    page = '100'
-    argc = len(sys.argv)
-    if (argc > 1):
-        page = sys.argv[1]
-        if page.isdigit() is False or int(page) not in range(100,900):
-            print_usage()
-            exit()
-       
+def main(page):
     url = 'http://www.svt.se/svttext/web/pages/%s.html' % page
     response = urllib.request.urlopen(url)
 
@@ -77,5 +69,13 @@ def main():
     print(output)
 
 if __name__ == '__main__':
-    main()
+    page = '100'
+    argc = len(sys.argv)
+    if (argc > 1):
+        page = sys.argv[1]
+        if page.isdigit() is False or int(page) not in range(100,900):
+            print_usage()
+            exit()
+       
+    main(page)
 
