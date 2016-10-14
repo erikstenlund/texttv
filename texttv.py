@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 
-import urllib.request
 import sys
+if sys.version_info.major >= 3:
+    import urllib.request
+else:
+    from datetime import datetime
+    now = datetime.now()
+    print('It is %d! Use python 3' % now.year)
+    exit()
 
 from html.parser import HTMLParser
 
@@ -69,6 +75,8 @@ def main(page):
     print(output)
 
 if __name__ == '__main__':
+    
+
     page = '100'
     argc = len(sys.argv)
     if (argc > 1):
