@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
+import os
+import json
+
 if sys.version_info.major >= 3:
     import urllib.request
 else:
@@ -46,19 +49,43 @@ class TextTVParser(HTMLParser):
 
 def print_usage():
     print('usage: texttv.py [page-index]')
+    exit()
+
+def private_page(page):
+    conf = {}
+    if os.path.isfile('.texttvconf'):
+        with open('.texttvconf') as conffile:
+            conf = json.loads(conffile.read())
+    else:
+        print_usage()
+
+    if int(page) not in range(conf['min_index'], conf['max_index']):
+        print_usage()
+                
+    url = 'http://' + conf['url'] + '/' + page
+    headers = { }
+    req = urllib.request.Request(url)
+    response = urllib.request.urlopen(req)
+    html = response.read()
+    #ToDo parsing printing etc
+    print(html)
+
 
 def main(page):
     url = 'http://www.svt.se/svttext/web/pages/%s.html' % page
     response = urllib.request.urlopen(url)
 
     html = response.read()
-    html = html.decode('utf-8')
+    lines = scrape_html(html)
+    print_lines(lines)
 
+def scrape_html(html):
+    html = html.decode('utf-8')
     parser = TextTVParser()
     parser.feed(html)
-    lines = parser.get_data()
-
-    
+    return parser.get_data()
+ 
+def print_lines(lines):
     set_color = {
         'C': lambda x: colors.BOLD + x + colors.ENDC,
         'Y': lambda x: colors.YELLOW + x + colors.ENDC,
@@ -75,15 +102,14 @@ def main(page):
     print(output)
 
 if __name__ == '__main__':
-    
-
     page = '100'
     argc = len(sys.argv)
     if (argc > 1):
         page = sys.argv[1]
-        if page.isdigit() is False or int(page) not in range(100,900):
-            print_usage()
-            exit()
-       
-    main(page)
+    if page.isdigit() is False:
+        print_usage()
+    elif int(page) in range(100,900):
+        main(page)
+    else:
+        private_page(page)
 
