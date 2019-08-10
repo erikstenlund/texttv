@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import readchar
 import sys
 if sys.version_info.major >= 3:
     import urllib.request
@@ -10,6 +10,7 @@ else:
     exit()
 
 from html.parser import HTMLParser
+from os import system, name
 
 class colors:
     CYAN = '\033[36m'
@@ -31,7 +32,7 @@ class TextTVParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag == 'pre':
             self.save_data = True
-            self.data.append(('=' * 41 + '\n', 'W'))
+            #self.data.append(('=' * 41 + '\n', 'W'))
         elif self.save_data is True and tag == 'span':
             self.current_color = attrs[0][1]
             self.color_tag = tag
@@ -41,7 +42,7 @@ class TextTVParser(HTMLParser):
             self.current_color = ''
         if tag == 'pre':
             self.save_data = False
-            self.data.append(('=' * 41 + '\n','W'))
+            #self.data.append(('=' * 41 + '\n','W'))
 
     def handle_data(self, data):
         if self.save_data is True:
@@ -81,15 +82,43 @@ def main(page):
                 text = set_color[color](text)
         output += text
 
+    clear()
     print(output)
 
+def clear():
+    if name == 'nt':
+        _ = system('cls')
+    else:
+        _ = system('clear')
+
+def read_input(page):
+    while True:
+        key = readchar.readkey()
+        if key == readchar.key.CTRL_C:
+            break
+        elif key == readchar.key.LEFT and int(page) > 100:
+            page = str(int(page) - 1)
+            main(page)
+        elif key == readchar.key.RIGHT and int(page) < 999:
+            page = str(int(page) + 1)
+            main(page)
+        elif key.isdigit():
+            if len(page) > 2:
+                page = ''
+            page += key
+            print(key, end='', flush=True)
+            if len(page) == 3 and int(page) > 100:
+                main(page)
+
 if __name__ == '__main__':
-    page = '100'
     argc = len(sys.argv)
     if (argc > 1):
         page = sys.argv[1]
-        if page.isdigit() is False or int(page) not in range(100,900):
+        if page.isdigit() is False or int(page) not in range(100,999):
             print_usage()
             exit()
-
-    main(page)
+        main(page)
+    else:
+        page = '100'
+        main(page)
+        read_input(page)
