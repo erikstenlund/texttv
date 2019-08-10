@@ -12,17 +12,20 @@ else:
 from html.parser import HTMLParser
 
 class colors:
-    BLUE = '\033[94m'
+    CYAN = '\033[36m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
+    BGBLUE = '\033[44m'
+
 
 class TextTVParser(HTMLParser):
     def __init__(self):
         super(TextTVParser, self).__init__()
         self.save_data = False
-        self.data = [] 
+        self.color_tag = ''
+        self.data = []
         self.current_color = ''
 
     def handle_starttag(self, tag, attrs):
@@ -31,8 +34,11 @@ class TextTVParser(HTMLParser):
             self.data.append(('=' * 41 + '\n', 'W'))
         elif self.save_data is True and tag == 'span':
             self.current_color = attrs[0][1]
+            self.color_tag = tag
 
     def handle_endtag(self, tag):
+        if self.color_tag == tag:
+            self.current_color = ''
         if tag == 'pre':
             self.save_data = False
             self.data.append(('=' * 41 + '\n','W'))
@@ -58,25 +64,26 @@ def main(page):
     parser.feed(html)
     lines = parser.get_data()
 
-    
+
     set_color = {
-        'C': lambda x: colors.BOLD + x + colors.ENDC,
+        'C': lambda x: colors.CYAN + x + colors.ENDC,
         'Y': lambda x: colors.YELLOW + x + colors.ENDC,
         'W': lambda x: x,
         'G': lambda x: colors.GREEN + x + colors.ENDC,
+        'DH': lambda x: colors.BOLD + x + colors.ENDC,
+        'bgB': lambda x: colors.BGBLUE + x + colors.ENDC,
     }
     output = ''
     for line in lines:
-        if line[1] in set_color:
-            output += set_color[line[1]](line[0])
-        else:
-            output += line[0]
+        text = line[0]
+        for color in line[1].split():
+            if color in set_color:
+                text = set_color[color](text)
+        output += text
 
     print(output)
 
 if __name__ == '__main__':
-    
-
     page = '100'
     argc = len(sys.argv)
     if (argc > 1):
@@ -84,6 +91,5 @@ if __name__ == '__main__':
         if page.isdigit() is False or int(page) not in range(100,900):
             print_usage()
             exit()
-       
-    main(page)
 
+    main(page)
