@@ -92,6 +92,7 @@ def clear():
         _ = system('clear')
 
 def read_input(page):
+    part_page = ''
     while True:
         key = readchar.readkey()
         if key == readchar.key.CTRL_C:
@@ -103,11 +104,15 @@ def read_input(page):
             page = str(int(page) + 1)
             main(page)
         elif key.isdigit():
-            if len(page) > 2:
-                page = ''
-            page += key
-            print(key, end='', flush=True)
-            if len(page) == 3 and int(page) > 100:
+            if len(part_page) == 0 and key != '0':
+                part_page += key
+                print(key, end='', flush=True)
+            elif len(part_page) > 0:
+                part_page += key
+                print(key, end='', flush=True)
+            if len(part_page) == 3:
+                page = part_page
+                part_page = ''
                 main(page)
 
 if __name__ == '__main__':
