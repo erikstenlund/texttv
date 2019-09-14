@@ -27,6 +27,8 @@ class TextTV():
         self.pages = {}
         self.input_buffer = ''
         self.current_page = 100
+        self.next_page = 101
+        self.prev_page = 100
 
     def display(self, page=100):
         self.current_page = int(page)
@@ -47,11 +49,11 @@ class TextTV():
             page = self.current_page
             if key == readchar.key.CTRL_C:
                 break
-            elif key == readchar.key.LEFT and self.current_page > 100:
-                page = self.current_page - 1
+            elif key == readchar.key.LEFT:
+                page = self.prev_page
                 self.input_buffer = ''
-            elif key == readchar.key.RIGHT and self.current_page < 999:
-                page = self.current_page + 1
+            elif key == readchar.key.RIGHT:
+                page = self.next_page
                 self.input_buffer = ''
             elif key.isdigit():
                 if len(self.input_buffer) == 0 and key != '0' or \
@@ -68,6 +70,8 @@ class TextTV():
         api_response = http_response.read()
         json_data = json.loads(api_response)
         html = json_data[0]['content'][0]
+        self.next_page = int(json_data[0]['next_page'])
+        self.prev_page = int(json_data[0]['prev_page'])
         return html
 
     @staticmethod
