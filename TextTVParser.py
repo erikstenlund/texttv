@@ -9,16 +9,16 @@ class TextTVParser(HTMLParser):
         self.current_color = ''
 
     def handle_starttag(self, tag, attrs):
-        if tag == 'pre':
+        if tag == 'div':
             self.save_data = True
-        elif self.save_data is True and tag == 'span':
+        elif self.save_data is True and (tag == 'span' or tag == 'h1'):
             self.current_color = attrs[0][1]
             self.color_tag = tag
 
     def handle_endtag(self, tag):
         if self.color_tag == tag:
             self.current_color = ''
-        if tag == 'pre':
+        if tag == 'div':
             self.save_data = False
 
     def handle_data(self, data):

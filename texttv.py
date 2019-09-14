@@ -2,6 +2,7 @@
 import readchar
 import sys
 import urllib.request
+import json
 from TextTVParser import TextTVParser
 from os import system, name
 
@@ -62,10 +63,11 @@ class TextTV():
             self.display(page)
 
     def get_html(self, page):
-        url = 'http://www.svt.se/svttext/web/pages/%s.html' % self.current_page
-        response = urllib.request.urlopen(url)
-        html = response.read()
-        html = html.decode('utf-8')
+        url = 'http://api.texttv.nu/api/get/%s?app=Ejdamm/texttv' % self.current_page
+        http_response = urllib.request.urlopen(url)
+        api_response = http_response.read()
+        json_data = json.loads(api_response)
+        html = json_data[0]['content'][0]
         return html
 
     @staticmethod
