@@ -1,5 +1,6 @@
 from html.parser import HTMLParser
 
+
 class TextTVParser(HTMLParser):
     def __init__(self):
         super(TextTVParser, self).__init__()
@@ -7,6 +8,7 @@ class TextTVParser(HTMLParser):
         self.color_tag = ''
         self.data = []
         self.current_color = ''
+        self.added_line = False
 
     def handle_starttag(self, tag, attrs):
         if tag == 'div':
@@ -14,6 +16,13 @@ class TextTVParser(HTMLParser):
         elif self.save_data is True and (tag == 'span' or tag == 'h1'):
             self.current_color = attrs[0][1]
             self.color_tag = tag
+
+        if attrs[0][1] == 'added-line':
+            self.save_data = False
+            self.added_line = True
+        elif self.added_line:
+            self.save_data = True
+            self.added_line = False
 
     def handle_endtag(self, tag):
         if self.color_tag == tag:
@@ -28,3 +37,6 @@ class TextTVParser(HTMLParser):
     def parse(self, html):
         self.feed(html)
         return self.data
+
+    def error(self, message):
+        print(message)
