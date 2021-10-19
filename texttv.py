@@ -1,89 +1,114 @@
 #!/usr/bin/env python3
-
+import readchar
 import sys
-if sys.version_info.major >= 3:
-    import urllib.request
-else:
-    from datetime import datetime
-    now = datetime.now()
-    print('It is %d! Use python 3' % now.year)
-    exit()
+import urllib.request
+import json
+from TextTVParser import TextTVParser
+from os import system, name
 
-from html.parser import HTMLParser
 
-class colors:
-    BLUE = '\033[94m'
+class Colors:
+    CYAN = '\033[36m'
     GREEN = '\033[92m'
     YELLOW = '\033[93m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
+    BGBLUE = '\033[44m'
+    set_color = {
+        'C': lambda x: Colors.CYAN + x + Colors.ENDC,
+        'Y': lambda x: Colors.YELLOW + x + Colors.ENDC,
+        'W': lambda x: x,
+        'G': lambda x: Colors.GREEN + x + Colors.ENDC,
+        'DH': lambda x: Colors.BOLD + x + Colors.ENDC,
+        'bgB': lambda x: Colors.BGBLUE + x + Colors.ENDC,
+    }
 
-class TextTVParser(HTMLParser):
+
+class TextTV:
     def __init__(self):
-        super(TextTVParser, self).__init__()
-        self.save_data = False
-        self.data = [] 
-        self.current_color = ''
+        self.pages = {}
+        self.input_buffer = ''
+        self.current_page = 100
 
-    def handle_starttag(self, tag, attrs):
-        if tag == 'pre':
-            self.save_data = True
-            self.data.append(('=' * 41 + '\n', 'W'))
-        elif self.save_data is True and tag == 'span':
-            self.current_color = attrs[0][1]
+    def display(self, tv_page=100):
+        self.current_page = int(tv_page)
+        if self.current_page not in self.pages:
+            self.pages[self.current_page] = {}
+            html = self.get_html()
+            parser = TextTVParser()
+            lines = parser.parse(html)
+            output = self.colorize(lines)
+            self.pages[self.current_page]['content'] = output
 
-    def handle_endtag(self, tag):
-        if tag == 'pre':
-            self.save_data = False
-            self.data.append(('=' * 41 + '\n','W'))
+        self.clear()
+        print(self.pages[self.current_page]['content'])
+        print(self.input_buffer)
 
-    def handle_data(self, data):
-        if self.save_data is True:
-            self.data.append((data, self.current_color))
+    def read_input(self):
+        while True:
+            key = readchar.readkey()
+            tv_page = self.current_page
+            if key == readchar.key.CTRL_C:
+                break
+            elif key == readchar.key.LEFT:
+                tv_page = self.pages[self.current_page]['prev']
+                self.input_buffer = ''
+            elif key == readchar.key.RIGHT:
+                tv_page = self.pages[self.current_page]['next']
+                self.input_buffer = ''
+            elif key == readchar.key.BACKSPACE:
+                self.input_buffer = self.input_buffer[:-1]
+            elif key.isdigit():
+                if len(self.input_buffer) == 0 and key != '0' or \
+                   len(self.input_buffer) > 0:
+                    self.input_buffer += key
+                if len(self.input_buffer) == 3:
+                    tv_page = self.input_buffer
+                    self.input_buffer = ''
+            self.display(tv_page)
 
-    def get_data(self):
-        return self.data
+    def get_html(self,):
+        url = 'http://api.texttv.nu/api/get/%s?app=Ejdamm/texttv' % self.current_page
+        http_response = urllib.request.urlopen(url)
+        api_response = http_response.read()
+        json_data = json.loads(api_response)
+        html = json_data[0]['content'][0]
+        self.pages[self.current_page]['next'] = int(json_data[0]['next_page'])
+        self.pages[self.current_page]['prev'] = int(json_data[0]['prev_page'])
+        return html
+
+    @staticmethod
+    def colorize(lines):
+        output = ''
+        for line in lines:
+            text = line[0]
+            for color in line[1].split():
+                if color in Colors.set_color:
+                    text = Colors.set_color[color](text)
+            output += text
+        return output
+
+    @staticmethod
+    def clear():
+        if name == 'nt':
+            _ = system('cls')
+        else:
+            _ = system('clear')
+
 
 def print_usage():
     print('usage: texttv.py [page-index]')
 
-def main(page):
-    url = 'http://www.svt.se/svttext/web/pages/%s.html' % page
-    response = urllib.request.urlopen(url)
-
-    html = response.read()
-    html = html.decode('utf-8')
-
-    parser = TextTVParser()
-    parser.feed(html)
-    lines = parser.get_data()
-
-    
-    set_color = {
-        'C': lambda x: colors.BOLD + x + colors.ENDC,
-        'Y': lambda x: colors.YELLOW + x + colors.ENDC,
-        'W': lambda x: x,
-        'G': lambda x: colors.GREEN + x + colors.ENDC,
-    }
-    output = ''
-    for line in lines:
-        if line[1] in set_color:
-            output += set_color[line[1]](line[0])
-        else:
-            output += line[0]
-
-    print(output)
 
 if __name__ == '__main__':
-    
-
-    page = '100'
     argc = len(sys.argv)
-    if (argc > 1):
+    texttv = TextTV()
+    if argc > 1:
         page = sys.argv[1]
-        if page.isdigit() is False or int(page) not in range(100,900):
+        if page.isdigit() is False or int(page) not in range(100, 999):
             print_usage()
             exit()
-       
-    main(page)
-
+        texttv.display(page)
+    else:
+        texttv.display(100)
+        texttv.read_input()
