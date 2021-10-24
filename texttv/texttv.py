@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import readchar
 import sys
 import urllib.request
@@ -15,8 +16,9 @@ class TerminalUI:
     def set_handlers(self, handlers):
         self.handlers = handlers
 
-    def refresh(self, data):
-        self.clear()
+    def refresh(self, data, clear=True):
+        if clear:
+            self.clear()
         print(data)
 
     def read_input(self):
@@ -109,7 +111,7 @@ class TextTV:
             'prev': self.prev,
             'next': self.next,
             'exit': self.exit,
-            'new_page': self.new_page,
+            'new_page': self.show_page,
         })
         self.interactive = False
         self.pages = {}
@@ -127,7 +129,10 @@ class TextTV:
     def exit(self):
         self.interactive = False
 
-    def new_page(self, page):
+    def show_single_page(self, page):
+        self.ui.refresh(self.get_page(page), clear=False)
+
+    def show_page(self, page):
         self.current_page = page
         self.ui.refresh(self.get_page(self.current_page))
 
@@ -147,7 +152,7 @@ class TextTV:
 
     def run(self, page=100):
         self.interactive = True
-        self.new_page(page)
+        self.show_page(page)
 
         while self.interactive:
             self.ui.read_input()
@@ -177,19 +182,39 @@ class TextTV:
 def print_usage():
     print('usage: texttv.py [page-index]')
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.description = """Terminal SVT Text TV viewer.\n
+    The application may both show single pages or run in interactive mode where pages can be viewed
+    using the directional keys or by entering new page numbers on the keyboard.
+    Running the application without any arguments will start the application in interactive mode.
+    """
+
+    parser.add_argument("-i", "--interactive", help="run the application in interactive mode", action="store_true")
+    parser.add_argument("page", type=int, help="the texttv page to show [100, 900]", nargs="?")
+    args = parser.parse_args()
+
+    # choices cant handle to many values so we check page manually
+    if args.page is not None and args.page not in range(100, 901):
+        parser.print_help()
+        exit(1)
+
+    return args
 
 def cli():
-    argc = len(sys.argv)
+    args = parse_args()
     ui = TerminalUI()
     texttv = TextTV(ui)
-    if argc > 1:
-        page = sys.argv[1]
-        if page.isdigit() is False or int(page) not in range(100, 999):
-            print_usage()
-            exit()
-        texttv.display(page)
-    else:
+
+    if args.page is None:
+        # Start with page 100 in interactive mode
         texttv.run(100)
+    else:
+        if args.interactive:
+            texttv.run(args.page)
+        else:
+            texttv.show_single_page(args.page)
+
 
 if __name__ == '__main__':
     cli()
