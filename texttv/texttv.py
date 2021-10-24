@@ -153,7 +153,7 @@ class TextTV:
             self.ui.read_input()
 
     def get_html_and_metadata(self, page):
-        url = 'http://api.texttv.nu/api/get/%s?app=Ejdamm/texttv' % page
+        url = 'http://api.texttv.nu/api/get/%s?app=texttv.py' % page
         http_response = urllib.request.urlopen(url)
         api_response = http_response.read()
         json_data = json.loads(api_response)
