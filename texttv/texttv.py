@@ -2,7 +2,6 @@
 
 import argparse
 import readchar
-import sys
 import urllib.request
 import json
 from os import system
@@ -178,9 +177,6 @@ class TextTV:
             output += text
         return output
 
-
-def print_usage():
-    print('usage: texttv.py [page-index]')
 
 def parse_args():
     parser = argparse.ArgumentParser()
