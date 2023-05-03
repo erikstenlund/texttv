@@ -15,10 +15,12 @@ class TerminalUI:
     def set_handlers(self, handlers):
         self.handlers = handlers
 
-    def refresh(self, data, clear=True):
+    def refresh(self, page, clear=True):
         if clear:
             self.clear()
-        print(data)
+            self.last_shown_page = page
+
+        print(page)
 
     def read_input(self):
         key = readchar.readkey()
@@ -31,14 +33,28 @@ class TerminalUI:
             self.input_buffer = ''
             self.handlers['next']()
         elif key == readchar.key.BACKSPACE:
-            self.input_buffer = self.input_buffer[:-1]
+            if len(self.input_buffer) > 0:
+                self.input_buffer = self.input_buffer[:-1]
+                self._update_page_number(self.input_buffer)
         elif key.isdigit():
             if len(self.input_buffer) == 0 and key != '0' or \
                 len(self.input_buffer) > 0:
                 self.input_buffer += key
+                self._update_page_number(self.input_buffer)
             if len(self.input_buffer) == 3:
                 self.handlers['new_page'](int(self.input_buffer))
                 self.input_buffer = ''
+
+    def _update_page_number(self, page_number):
+        if len(page_number) == 0:
+            page_number = '***'
+        elif len(page_number) == 1:
+            page_number = page_number + '**'
+        elif len(page_number) == 2:
+            page_number = page_number + '*'
+
+        updated_page = self.last_shown_page[:3] + page_number + self.last_shown_page[6:]
+        self.refresh(updated_page)
 
     @staticmethod
     def clear():
@@ -121,9 +137,11 @@ class TextTV:
         self.ui.refresh(self.get_page(self.current_page))
 
     def next(self):
+        last_page = self.current_page
         self.current_page = self.pages[self.current_page]['next']
         self.ui.refresh(self.get_page(self.current_page))
-        pass
+        self.pages[self.current_page]['prev'] = last_page
+
 
     def exit(self):
         self.interactive = False
@@ -132,8 +150,13 @@ class TextTV:
         self.ui.refresh(self.get_page(page), clear=False)
 
     def show_page(self, page):
-        self.current_page = page
-        self.ui.refresh(self.get_page(self.current_page))
+        content = self.get_page(page)
+        if len(content) > 0:
+            self.ui.refresh(content)
+            self.current_page = page
+        else:
+            self.ui.refresh(self.get_page(self.current_page))
+
 
     def get_page(self, page):
         if page not in self.pages:
