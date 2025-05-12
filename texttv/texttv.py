@@ -60,7 +60,6 @@ class TerminalUI:
     def clear():
         system('clear')
 
-
 class TextTVParser(HTMLParser):
     def __init__(self):
         super(TextTVParser, self).__init__()
@@ -101,6 +100,20 @@ class TextTVParser(HTMLParser):
     def error(self, message):
         print(message)
 
+class TextTVBackend:
+    def get_html_and_metadata(self, page):
+        url = 'http://api.texttv.nu/api/get/%s?app=texttv.py' % page
+        http_response = urllib.request.urlopen(url)
+        api_response = http_response.read()
+        json_data = json.loads(api_response)
+        html = json_data[0]['content'][0]
+        next_page = int(json_data[0]['next_page'])
+        prev_page = int(json_data[0]['prev_page'])
+        return html, prev_page, next_page
+
+    def get_parser(self):
+        return TextTVParser()
+
 
 class Colors:
     CYAN = '\033[36m'
@@ -118,9 +131,8 @@ class Colors:
         'bgB': lambda x: Colors.BGBLUE + x + Colors.ENDC,
     }
 
-
 class TextTV:
-    def __init__(self, ui):
+    def __init__(self, ui, backend):
         self.ui = ui
         self.ui.set_handlers({
             'prev': self.prev,
@@ -128,6 +140,7 @@ class TextTV:
             'exit': self.exit,
             'new_page': self.show_page,
         })
+        self.backend = backend
         self.interactive = False
         self.pages = {}
         self.current_page = 100
@@ -161,12 +174,11 @@ class TextTV:
     def get_page(self, page):
         if page not in self.pages:
             self.pages[page] = {}
-            html, prev, next = self.get_html_and_metadata(page)
+            html, prev, next = self.backend.get_html_and_metadata(page)
             self.pages[page]['prev'] = prev
             self.pages[page]['next'] = next
 
-            parser = TextTVParser()
-            lines = parser.parse(html)
+            lines = self.backend.get_parser().parse(html)
             output = self.colorize(lines)
             self.pages[page]['content'] = output
 
@@ -179,15 +191,7 @@ class TextTV:
         while self.interactive:
             self.ui.read_input()
 
-    def get_html_and_metadata(self, page):
-        url = 'http://api.texttv.nu/api/get/%s?app=texttv.py' % page
-        http_response = urllib.request.urlopen(url)
-        api_response = http_response.read()
-        json_data = json.loads(api_response)
-        html = json_data[0]['content'][0]
-        next_page = int(json_data[0]['next_page'])
-        prev_page = int(json_data[0]['prev_page'])
-        return html, prev_page, next_page
+
 
     @staticmethod
     def colorize(lines):
@@ -223,7 +227,8 @@ def parse_args():
 def cli():
     args = parse_args()
     ui = TerminalUI()
-    texttv = TextTV(ui)
+    backend = TextTVBackend()
+    texttv = TextTV(ui, backend)
 
     if args.page is None:
         # Start with page 100 in interactive mode
